@@ -78,7 +78,7 @@ function pluginLoader(plugins) {
 
 
     let requiredKeysSeen = [];
-    for (const [i, { key, value }] of rawParameters.entries()) {
+    for (const [i, { key, value }] of (rawParameters === null ? [] : rawParameters).entries()) {
       // Check for duplicates
       if (givenKeys.indexOf(key) !== givenKeys.lastIndexOf(key))
         yield A.fail(`key '${key}' is duplicated`);
@@ -100,7 +100,7 @@ function pluginLoader(plugins) {
           }
         } else {
           if (value.type !== expectedArrayType && expectedArrayType !== "any")
-            yield A.fail(`key '${key}' is of type '${value.type}' but we expect '${expectedType}'`);
+            yield A.fail(`key '${key}[0]' is of type '${value.type}' but we expect '${expectedType}' to have only '${expectedArrayType}'`);
           const copyOfValue = { ...value };
           value.type = "array";
           value.value = copyOfValue;
