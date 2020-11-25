@@ -70,7 +70,7 @@ If the method doesn't exist:
 
 ## Method arguments
 
-There may be any number of named arguments. If there is a positional argument, then it may appear anywhere in the function signature, but if it's present and required, the caller must place it before any named arguments. Named arguments may appear in any order:
+There may be any number of named arguments. If there is a positional argument, if it's present and required, the caller must place it before any named arguments. Named arguments may appear in any order:
 
 ```
 @@pg.index([ email, first_name ], name: "my_index", partial: true)
