@@ -1,13 +1,13 @@
 # Attribute parser for plugin system
 
-This attribute system implements and extends with a type checking system the one from prisma spec.
-
-[Source](https://github.com/prisma/specs/tree/master/schema#attributes)
+This attribute parser implements the [Prisma spec](https://github.com/prisma/specs/tree/master/schema#attributes) for attributes and expands it with type checking and signature validation.
 
 ## Plugin config
 
-Example configuration for a plugin:
+Example usage:
 ```js
+const pluginLoader = require("./src");
+
 const validatorPluginConfig = {
   namespace: "Validator",
   methods: {
@@ -35,6 +35,41 @@ const validatorPluginConfig = {
       }
     }
   }
+}
+
+const parser = pluginLoader([TypeGraphQLConfig, validatorPluginConfig, foxPluginConfig]);
+
+const parsed = parser.run(`@Validator.Min(30, "Password must be atleast 30 characters long")`);
+
+console.log(JSON.stringify(parsed, null, 2));
+{
+  "isError": false,
+  "result": {
+    "type": "attribute",
+    "value": {
+      "context": "field",
+      "namespace": "Validator",
+      "method": "Min",
+      "parameters": [
+        {
+          "key": "_",
+          "value": {
+            "type": "number",
+            "value": 30
+          }
+        },
+        {
+          "key": "message",
+          "value": {
+            "type": "string",
+            "value": "Password must be atleast 30 characters long"
+          }
+        }
+      ]
+    }
+  },
+  "index": 74,
+  "data": null
 }
 ```
 
@@ -66,7 +101,12 @@ If the method doesn't exist:
 < Method 'IsURI' is not a registered method in the namespace 'Validator', valid ones [IsEmail, Min]
 ```
 
-``
+Plugins must configure each method signature with:
+
+- If the argument is required or not
+- The type of the argument
+
+By the looks of the [Prisma spec](https://github.com/prisma/specs/tree/master/schema#attributes) valid types for the oficial spec are `boolean`, `number`, `string` and the equivalent array ones (`boolean[]`, `number[]`, `string[]`). there is also `any` and `any[]` for when we don't want to force a type.
 
 ## Method arguments
 
@@ -86,26 +126,37 @@ methods with arguments with the same name will cause an error:
 < key 'message' is duplicated
 ```
 
-Arrays with a single parameter, you may omit the surrounding brackets, the compiler will wrap the result in an array if the type validates correctly as if it was an item of it:
+Arrays with a single parameter, you may omit the surrounding brackets, the parser will wrap the result in an array if the type validates correctly as if it was an item of it:
 
 ```js
-/*const result = */parser.run(`@Fox.test(arg: "hello")`);
-const result = {
-  context: "field",
-  namespace: "Fox",
-  method: "Test",
-  parameters: [
-    {
-      key: "arg",
-      value: {
-        type: "array",
-        value: {
-          type: "string",
-          value: "hello"
+// [...]
+const parsed = parser.run(`@Fox.test(arg: "hello")`);
+
+console.log(JSON.stringify(parsed, null, 2));
+{
+  "isError": false,
+  "result": {
+    "type": "attribute",
+    "value": {
+      "context": "field",
+      "namespace": "Fox",
+      "method": "Test",
+      "parameters": [
+        {
+          "key": "arg",
+          "value": {
+            "type": "array",
+            "value": {
+              "type": "string",
+              "value": "hello"
+            }
+          }
         }
-      }
+      ]
     }
-  ]
+  },
+  "index": 23,
+  "data": null
 }
 ```
 
@@ -114,4 +165,23 @@ Error if another type is given:
 ```
 > @Fox.Test(arg: 42)
 < "key 'arg[0]' is of type 'number' but we expect 'string[]' to have only 'string'
+```
+
+## Documentation comments
+
+Documentation comments are also parsed
+```js
+// [...]
+const parsed = parser.run(`this is a documentation comment`);
+
+console.log(JSON.stringify(parsed, null, 2));
+{
+  "isError": false,
+  "result": {
+    "type": "documentation",
+    "value": "this is a documentation comment"
+  },
+  "index": 31,
+  "data": null
+}
 ```
