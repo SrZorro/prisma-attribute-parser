@@ -6,12 +6,21 @@ function pluginLoader(plugins) {
     A.char("@")
   ])
     .map((x) => (x === "@" ? "field" : "block"))
-    .errorMap((err) => {
-      return `ParseError (position ${err.index}): Expected '@' for field method or '@@' for block method`
-    })
+    .errorMap((err) => `ParseError (position ${err.index}): Expected '@' for field method or '@@' for block method`)
 
 
   return A.coroutine(function* () {
+    const checkIfAttribute = yield A.possibly(A.lookAhead(A.char("@")));
+
+    if (checkIfAttribute === null) {
+      // Not an attribute, so is documentation
+      const doc = yield A.everyCharUntil(A.endOfInput);
+      return {
+        type: "documentation",
+        value: doc
+      }
+    }
+
     // Get field @ or block @@
     const fieldOrBlock = yield fieldOrBlockParser;
 
@@ -121,7 +130,7 @@ function pluginLoader(plugins) {
     if (requiredKeysDifference.length !== 0)
       yield A.fail(`keys [${requiredKeysDifference.join(", ")}] are required but aren't given`);
 
-    return { context: fieldOrBlock, namespace, method: methodName, parameters };
+    return { type: "attribute", value: { context: fieldOrBlock, namespace, method: methodName, parameters } };
   })
 }
 
