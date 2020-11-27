@@ -37,7 +37,11 @@ const validatorPluginConfig = {
   }
 }
 
-const parser = pluginLoader([TypeGraphQLConfig, validatorPluginConfig, foxPluginConfig]);
+const TypeGraphQLPluginConfig = {
+  // [...]
+}
+
+const parser = pluginLoader([validatorPluginConfig, TypeGraphQLPluginConfig]);
 
 const parsed = parser.run(`@Validator.Min(30, "Password must be atleast 30 characters long")`);
 
